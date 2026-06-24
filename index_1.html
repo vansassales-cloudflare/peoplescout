@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PeopleScout v1.2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #e2e8f0;
+    --border2: #cbd5e1;
+    --text: #0f172a;
+    --text2: #64748b;
+    --text3: #94a3b8;
+    --accent: #0891b2;
+    --accent-light: #e0f2fe;
+    --accent-dark: #0c4a6e;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .app-wrapper { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── Header ── */
+  #ps-header {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  #ps-logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  #ps-wordmark { font-size: 18px; font-weight: 600; color: var(--text); }
+  #ps-badge {
+    font-size: 10px; font-weight: 600;
+    background: var(--accent-light); color: var(--accent-dark);
+    padding: 2px 8px; border-radius: 20px; letter-spacing: 0.04em;
+  }
+  #db-count-header {
+    margin-left: auto; font-size: 13px; color: var(--text2);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── API Key Banner ── */
+  #api-banner {
+    background: #fffbeb; border: 1px solid #fcd34d;
+    border-radius: var(--radius-md); padding: 12px 16px;
+    margin-bottom: 1.25rem; font-size: 13px; color: #92400e;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  #api-banner.hidden { display: none; }
+  #api-banner input {
+    flex: 1; min-width: 200px; font-size: 13px;
+    padding: 6px 10px; border: 1px solid #fcd34d;
+    border-radius: var(--radius-md); background: white; color: var(--text);
+    font-family: monospace;
+  }
+  #api-banner input:focus { outline: none; border-color: var(--accent); }
+  #api-banner button {
+    padding: 6px 14px; font-size: 13px; font-weight: 500;
+    background: var(--accent); color: white; border: none;
+    border-radius: var(--radius-md); cursor: pointer;
+  }
+
+  /* ── Tabs ── */
+  #ps-tabs {
+    display: flex; border-bottom: 1px solid var(--border);
+    margin-bottom: 1.25rem;
+  }
+  .ps-tab {
+    padding: 9px 20px; font-size: 14px; cursor: pointer;
+    color: var(--text2); border-bottom: 2px solid transparent;
+    margin-bottom: -1px; display: flex; align-items: center; gap: 7px;
+    user-select: none; transition: color 0.15s;
+  }
+  .ps-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .ps-tab:hover:not(.active) { color: var(--text); }
+
+  /* ── Mode toggle ── */
+  .search-mode-toggle {
+    display: flex; border: 1px solid var(--border);
+    border-radius: var(--radius-md); overflow: hidden;
+    width: fit-content; margin-bottom: 1rem;
+  }
+  .mode-btn {
+    padding: 7px 16px; font-size: 13px; cursor: pointer;
+    background: var(--surface); color: var(--text2); border: none;
+    display: flex; align-items: center; gap: 6px; user-select: none;
+  }
+  .mode-btn + .mode-btn { border-left: 1px solid var(--border); }
+  .mode-btn.active { background: var(--accent-light); color: var(--accent-dark); }
+
+  /* ── Simple search ── */
+  #ps-searchbar { display: flex; gap: 8px; margin-bottom: 1rem; }
+  #ps-searchbar input {
+    flex: 1; font-size: 15px; padding: 0 14px; height: 42px;
+    border: 1px solid var(--border2); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--text);
+  }
+  #ps-searchbar input:focus { outline: none; border-color: var(--accent); }
+  .search-btn {
+    padding: 0 20px; height: 42px; border-radius: var(--radius-md);
+    border: none; background: var(--accent); color: white;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+  }
+  .search-btn:hover { background: #0e7490; }
+
+  /* ── Advanced search ── */
+  #search-advanced { display: none; }
+  .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  @media(max-width: 520px) { .adv-grid { grid-template-columns: 1fr; } }
+  .adv-field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+  .adv-field input, .adv-field select {
+    width: 100%; font-size: 14px; padding: 0 12px; height: 38px;
+    border: 1px solid var(--border2); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--text);
+  }
+  .adv-field input:focus, .adv-field select:focus { outline: none; border-color: var(--accent); }
+  .adv-actions { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .adv-clear {
+    padding: 0 14px; height: 38px; border-radius: var(--radius-md);
+    border: 1px solid var(--border2); background: var(--surface);
+    color: var(--text2); font-size: 13px; cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .adv-clear:hover { background: var(--surface2); }
+
+  /* ── Active query pills ── */
+  .active-query-bar {
+    display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 1rem; padding: 8px 12px;
+    background: var(--surface2); border-radius: var(--radius-md);
+    font-size: 13px; color: var(--text2);
+  }
+  .active-query-bar.visible { display: flex; }
+  .aq-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent-light); color: var(--accent-dark);
+    border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 500;
+  }
+
+  /* ── Category filters ── */
+  #ps-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .ps-filter {
+    display: flex; align-items: center; gap: 6px; font-size: 13px;
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 13px; cursor: pointer; background: var(--surface);
+    color: var(--text2); user-select: none; transition: 0.1s;
+  }
+  .ps-filter:hover { background: var(--surface2); }
+  .ps-filter.active { background: var(--accent-light); color: var(--accent-dark); border-color: #7dd3fc; }
+
+  /* ── Status / loading ── */
+  #ps-status { font-size: 13px; color: var(--text2); margin-bottom: 1rem; min-height: 18px; }
+  #ps-loading { display: none; text-align: center; padding: 2.5rem 0; color: var(--text2); font-size: 14px; }
+  .ps-spinner {
+    width: 22px; height: 22px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.7s linear infinite; margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #ps-empty { text-align: center; padding: 3rem 0; color: var(--text2); font-size: 14px; display: none; }
+  #ps-empty i { font-size: 40px; opacity: 0.3; display: block; margin-bottom: 10px; }
+
+  /* ── Profile cards grid ── */
+  #ps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .ps-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px;
+    position: relative; overflow: hidden; transition: border-color 0.15s;
+  }
+  .ps-card:hover { border-color: var(--border2); }
+  .ps-card.saved { border-color: #7dd3fc; }
+  .ps-card.scanning::after {
+    content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(8,145,178,0.06), transparent);
+    animation: scan 1s ease-out forwards;
+  }
+  @keyframes scan { to { left: 140%; } }
+  .ps-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .ps-avatar {
+    width: 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; flex-shrink: 0;
+  }
+  .av0{background:#e0f2fe;color:#0c4a6e} .av1{background:#dcfce7;color:#14532d}
+  .av2{background:#fef3c7;color:#78350f} .av3{background:#ede9fe;color:#4c1d95}
+  .av4{background:#fce7f3;color:#831843} .av5{background:#d1fae5;color:#064e3b}
+  .ps-name { font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 2px; }
+  .ps-title-text { font-size: 13px; color: var(--text2); margin: 0; }
+  .ps-company {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 500;
+    background: var(--surface2); color: var(--text2);
+    border-radius: 20px; padding: 3px 10px; margin-bottom: 10px;
+  }
+  .ps-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .ps-tag {
+    font-size: 11px; background: var(--accent-light); color: var(--accent-dark);
+    border-radius: 4px; padding: 2px 7px;
+  }
+  .ps-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+  .ps-bio { font-size: 12px; color: var(--text2); margin-top: 8px; line-height: 1.5; }
+  .ps-actions {
+    display: flex; gap: 6px; margin-top: 12px;
+    border-top: 1px solid var(--border); padding-top: 12px;
+  }
+  .ps-btn {
+    flex: 1; font-size: 12px; display: flex; align-items: center;
+    justify-content: center; gap: 5px; padding: 7px 0;
+    border: 1px solid var(--border2); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--text2); cursor: pointer; transition: 0.1s;
+  }
+  .ps-btn:hover { background: var(--surface2); }
+  .ps-btn.primary { border-color: #7dd3fc; background: var(--accent-light); color: var(--accent-dark); }
+  .ps-btn.primary:hover { background: #bae6fd; }
+  .ps-btn.save-btn.saved-state { border-color: #6ee7b7; background: #d1fae5; color: #064e3b; }
+  .toast {
+    position: absolute; top: 12px; right: 12px;
+    background: var(--accent); color: white; font-size: 11px;
+    padding: 4px 10px; border-radius: 20px; opacity: 0;
+    transition: opacity 0.2s; pointer-events: none; z-index: 10;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ── Database tab ── */
+  .db-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  @media(max-width: 520px) { .db-stats { grid-template-columns: 1fr; } }
+  .db-stat { background: var(--surface2); border-radius: var(--radius-md); padding: 14px 16px; }
+  .db-stat-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .db-stat-val { font-size: 24px; font-weight: 600; color: var(--text); }
+  #db-search {
+    width: 100%; margin-bottom: 1rem; font-size: 14px;
+    padding: 0 12px; height: 38px;
+    border: 1px solid var(--border2); border-radius: var(--radius-md);
+    background: var(--surface); color: var(--text);
+  }
+  #db-search:focus { outline: none; border-color: var(--accent); }
+  #db-list { display: flex; flex-direction: column; gap: 8px; }
+  .db-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 12px 14px;
+    transition: border-color 0.1s;
+  }
+  .db-row:hover { border-color: var(--border2); }
+  .db-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .db-info { flex: 1; min-width: 0; }
+  .db-name { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .db-sub { font-size: 12px; color: var(--text2); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .db-cat { font-size: 11px; padding: 2px 9px; border-radius: 20px; flex-shrink: 0; }
+  .db-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--text2); font-size: 17px; padding: 4px; border-radius: 4px;
+    display: flex; align-items: center;
+  }
+  .db-del:hover { color: #b91c1c; background: #fee2e2; }
+  #db-empty { text-align: center; padding: 3rem 0; color: var(--text2); font-size: 14px; display: none; }
+  #db-empty i { font-size: 40px; opacity: 0.3; display: block; margin-bottom: 10px; }
+  .db-export-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+  .db-export-btn {
+    display: flex; align-items: center; gap: 7px; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border2);
+    border-radius: var(--radius-md); background: var(--surface);
+    color: var(--text2); cursor: pointer;
+  }
+  .db-export-btn:hover { background: var(--surface2); }
+  .db-export-btn.danger { color: #b91c1c; }
+  .db-export-btn.danger:hover { background: #fee2e2; }
+</style>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <div id="ps-header">
+    <div id="ps-logo"><i class="ti ti-radar"></i></div>
+    <span id="ps-wordmark">PeopleScout</span>
+    <span id="ps-badge">v1.2</span>
+    <span id="db-count-header"><i class="ti ti-database" style="font-size:15px;"></i><span id="hdr-count">0</span> opgeslagen</span>
+  </div>
+
+  <div id="api-banner">
+    <i class="ti ti-key" style="font-size:18px;flex-shrink:0;"></i>
+    <span style="flex-shrink:0;">Voer je Anthropic API key in om te beginnen:</span>
+    <input id="api-key-input" type="password" placeholder="sk-ant-..." />
+    <button onclick="saveApiKey()">Opslaan</button>
+    <a href="https://console.anthropic.com/keys" target="_blank" style="font-size:12px;color:#92400e;margin-left:auto;">Haal een key op →</a>
+  </div>
+
+  <div id="ps-tabs">
+    <div class="ps-tab active" onclick="switchTab('search')"><i class="ti ti-search"></i> Zoeken</div>
+    <div class="ps-tab" onclick="switchTab('db')"><i class="ti ti-database"></i> Mijn database</div>
+  </div>
+
+  <!-- SEARCH TAB -->
+  <div id="tab-search">
+    <div class="search-mode-toggle">
+      <div class="mode-btn active" onclick="setMode('simple')"><i class="ti ti-search" style="font-size:14px;"></i> Snel zoeken</div>
+      <div class="mode-btn" onclick="setMode('advanced')"><i class="ti ti-adjustments-horizontal" style="font-size:14px;"></i> Geavanceerd</div>
+    </div>
+
+    <div id="search-simple">
+      <div id="ps-searchbar">
+        <input id="ps-input" type="text" placeholder="Zoek op naam, functie, bedrijf of skill..." />
+        <button class="search-btn" onclick="runSearch('simple')"><i class="ti ti-search"></i> Zoek</button>
+      </div>
+    </div>
+
+    <div id="search-advanced">
+      <div class="adv-grid">
+        <div class="adv-field">
+          <label><i class="ti ti-building" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Bedrijfsnaam</label>
+          <input id="adv-company" type="text" placeholder="bijv. ASML, Philips, bol.com..." />
+        </div>
+        <div class="adv-field">
+          <label><i class="ti ti-briefcase" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Functietitel</label>
+          <input id="adv-title" type="text" placeholder="bijv. Marketing Manager, CTO..." />
+        </div>
+        <div class="adv-field">
+          <label><i class="ti ti-map-pin" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Locatie</label>
+          <input id="adv-location" type="text" placeholder="bijv. Amsterdam, Eindhoven..." />
+        </div>
+        <div class="adv-field">
+          <label><i class="ti ti-tag" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Sector</label>
+          <select id="adv-sector">
+            <option value="">Alle sectoren</option>
+            <option value="tech">Tech & Software</option>
+            <option value="sales">Sales & Business Development</option>
+            <option value="marketing">Marketing & Communicatie</option>
+            <option value="leadership">Leadership & Management</option>
+            <option value="research">Research & Wetenschap</option>
+            <option value="finance">Finance & Accounting</option>
+            <option value="legal">Legal & Compliance</option>
+            <option value="hr">HR & People</option>
+          </select>
+        </div>
+        <div class="adv-field">
+          <label><i class="ti ti-user" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Naam (optioneel)</label>
+          <input id="adv-name" type="text" placeholder="bijv. Jan de Vries..." />
+        </div>
+        <div class="adv-field">
+          <label><i class="ti ti-tools" style="font-size:12px;vertical-align:-1px;margin-right:3px;"></i>Skill / keyword</label>
+          <input id="adv-skill" type="text" placeholder="bijv. Python, SEO, M&A..." />
+        </div>
+      </div>
+      <div class="adv-actions">
+        <button class="search-btn" style="height:38px;padding:0 18px;" onclick="runSearch('advanced')"><i class="ti ti-search"></i> Zoek profielen</button>
+        <button class="adv-clear" onclick="clearAdvanced()"><i class="ti ti-x"></i> Wissen</button>
+      </div>
+    </div>
+
+    <div class="active-query-bar" id="active-query-bar"></div>
+
+    <div id="ps-filters">
+      <span style="font-size:13px;color:var(--text2);line-height:32px;margin-right:4px;">Filter:</span>
+      <div class="ps-filter active" data-filter="all" onclick="toggleFilter(this)"><i class="ti ti-users"></i> Alle</div>
+      <div class="ps-filter" data-filter="tech" onclick="toggleFilter(this)"><i class="ti ti-code"></i> Tech</div>
+      <div class="ps-filter" data-filter="sales" onclick="toggleFilter(this)"><i class="ti ti-chart-bar"></i> Sales</div>
+      <div class="ps-filter" data-filter="marketing" onclick="toggleFilter(this)"><i class="ti ti-speakerphone"></i> Marketing</div>
+      <div class="ps-filter" data-filter="leadership" onclick="toggleFilter(this)"><i class="ti ti-crown"></i> Leadership</div>
+      <div class="ps-filter" data-filter="research" onclick="toggleFilter(this)"><i class="ti ti-microscope"></i> Research</div>
+    </div>
+
+    <div id="ps-status"></div>
+    <div id="ps-loading"><div class="ps-spinner"></div>Profielen zoeken op het internet...</div>
+    <div id="ps-empty"><i class="ti ti-user-search"></i>Geen profielen gevonden. Probeer andere zoekvelden.</div>
+    <div id="ps-grid"></div>
+  </div>
+
+  <!-- DATABASE TAB -->
+  <div id="tab-db" style="display:none;">
+    <div class="db-stats">
+      <div class="db-stat"><div class="db-stat-label">Totaal opgeslagen</div><div class="db-stat-val" id="stat-total">0</div></div>
+      <div class="db-stat"><div class="db-stat-label">Categorieën</div><div class="db-stat-val" id="stat-cats">0</div></div>
+      <div class="db-stat"><div class="db-stat-label">Laatste toevoeging</div><div class="db-stat-val" id="stat-last" style="font-size:14px;padding-top:5px;">—</div></div>
+    </div>
+    <input id="db-search" type="text" placeholder="Zoek in database op naam, functie of bedrijf..." oninput="renderDB()" />
+    <div id="db-list"></div>
+    <div id="db-empty"><i class="ti ti-database"></i>Nog geen profielen opgeslagen. Zoek en klik op "Opslaan".</div>
+    <div class="db-export-row">
+      <button class="db-export-btn" onclick="exportCSV()"><i class="ti ti-download"></i> Exporteer als CSV</button>
+      <button class="db-export-btn danger" onclick="clearDB()"><i class="ti ti-trash"></i> Database leegmaken</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let allProfiles = [], filteredProfiles = [], currentFilter = 'all', currentMode = 'simple';
+const COLORS = ['av0','av1','av2','av3','av4','av5'];
+const CAT_COLORS = {
+  tech:'#e0f2fe|#0c4a6e', sales:'#dcfce7|#14532d',
+  marketing:'#fef3c7|#78350f', leadership:'#ede9fe|#4c1d95',
+  research:'#d1fae5|#064e3b', finance:'#fef3c7|#78350f',
+  legal:'#ede9fe|#4c1d95', hr:'#d1fae5|#064e3b'
+};
+
+function getApiKey() { return localStorage.getItem('ps_api_key') || ''; }
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('sk-ant-')) { alert('Voer een geldige Anthropic API key in (begint met sk-ant-).'); return; }
+  localStorage.setItem('ps_api_key', key);
+  document.getElementById('api-banner').classList.add('hidden');
+}
+function checkApiKey() {
+  if (getApiKey()) document.getElementById('api-banner').classList.add('hidden');
+}
+
+function getDB() { try { return JSON.parse(localStorage.getItem('ps_database') || '[]'); } catch(e) { return []; } }
+function saveDB(db) { try { localStorage.setItem('ps_database', JSON.stringify(db)); } catch(e) {} updateDBCount(); }
+function updateDBCount() {
+  const n = getDB().length;
+  document.getElementById('hdr-count').textContent = n;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.ps-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='search')||(i===1&&tab==='db')));
+  document.getElementById('tab-search').style.display = tab==='search' ? 'block' : 'none';
+  document.getElementById('tab-db').style.display = tab==='db' ? 'block' : 'none';
+  if (tab==='db') { renderDB(); updateStats(); }
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&mode==='simple')||(i===1&&mode==='advanced')));
+  document.getElementById('search-simple').style.display = mode==='simple' ? 'block' : 'none';
+  document.getElementById('search-advanced').style.display = mode==='advanced' ? 'block' : 'none';
+}
+
+document.getElementById('ps-input').addEventListener('keydown', e => { if (e.key==='Enter') runSearch('simple'); });
+['adv-company','adv-title','adv-location','adv-name','adv-skill'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if (e.key==='Enter') runSearch('advanced'); });
+});
+
+function buildQuery(mode) {
+  if (mode === 'simple') {
+    return { queryString: document.getElementById('ps-input').value.trim(), pills: [] };
+  }
+  const company = document.getElementById('adv-company').value.trim();
+  const title = document.getElementById('adv-title').value.trim();
+  const location = document.getElementById('adv-location').value.trim();
+  const sector = document.getElementById('adv-sector').value;
+  const name = document.getElementById('adv-name').value.trim();
+  const skill = document.getElementById('adv-skill').value.trim();
+  const parts = [], pills = [];
+  if (company) { parts.push(`werkzaam bij ${company}`); pills.push({icon:'ti-building',label:company}); }
+  if (title) { parts.push(`met functietitel "${title}"`); pills.push({icon:'ti-briefcase',label:title}); }
+  if (location) { parts.push(`gevestigd in ${location}`); pills.push({icon:'ti-map-pin',label:location}); }
+  if (sector) { parts.push(`in de sector ${sector}`); pills.push({icon:'ti-tag',label:sector}); }
+  if (name) { parts.push(`met naam zoals "${name}"`); pills.push({icon:'ti-user',label:name}); }
+  if (skill) { parts.push(`met skill "${skill}"`); pills.push({icon:'ti-tools',label:skill}); }
+  return { queryString: parts.join(', '), pills };
+}
+
+function showActiveQuery(pills) {
+  const bar = document.getElementById('active-query-bar');
+  if (!pills.length) { bar.classList.remove('visible'); bar.innerHTML = ''; return; }
+  bar.classList.add('visible');
+  bar.innerHTML = '<span style="flex-shrink:0;"><i class="ti ti-filter" style="font-size:13px;"></i> Zoekopdracht:</span>' +
+    pills.map(p => `<span class="aq-pill"><i class="ti ${p.icon}" style="font-size:11px;"></i>${p.label}</span>`).join('');
+}
+
+async function runSearch(mode) {
+  const key = getApiKey();
+  if (!key) { document.getElementById('api-banner').classList.remove('hidden'); document.getElementById('api-key-input').focus(); return; }
+  const { queryString, pills } = buildQuery(mode);
+  if (!queryString) { setStatus('Vul minimaal één zoekveld in.'); return; }
+  showLoading(true); setStatus(''); clearGrid(); showActiveQuery(pills);
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: `You are a professional people search engine. Return ONLY a raw JSON array (no markdown, no backticks) with exactly 6 profiles matching: ${queryString}. Each object must have: name (string), initials (2 chars), title (string), company (string), location (string), category (one of: tech sales marketing leadership research), skills (array of 3 strings), email_hint (masked like "j.s***@company.com"), linkedin (bool), github (bool), website (bool), followers (integer), bio (one sentence). Make profiles realistic and diverse.`,
+        messages: [{ role: 'user', content: `Zoek profielen voor: ${queryString}` }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    const s = clean.indexOf('['), e2 = clean.lastIndexOf(']');
+    allProfiles = JSON.parse(clean.substring(s, e2+1));
+    currentFilter = 'all';
+    document.querySelectorAll('.ps-filter').forEach(f => f.classList.toggle('active', f.dataset.filter==='all'));
+    applyFilter();
+  } catch(err) {
+    setStatus('Fout: ' + (err.message || 'Zoekopdracht mislukt. Controleer je API key.'));
+  } finally { showLoading(false); }
+}
+
+function clearAdvanced() {
+  ['adv-company','adv-title','adv-location','adv-name','adv-skill'].forEach(id => { const el=document.getElementById(id); if(el)el.value=''; });
+  document.getElementById('adv-sector').value = '';
+  showActiveQuery([]);
+}
+
+function applyFilter() {
+  filteredProfiles = currentFilter==='all' ? allProfiles : allProfiles.filter(p => p.category===currentFilter);
+  renderGrid();
+}
+
+function renderGrid() {
+  clearGrid();
+  const savedNames = new Set(getDB().map(p=>p.name));
+  if (!filteredProfiles.length) { document.getElementById('ps-empty').style.display='block'; return; }
+  document.getElementById('ps-empty').style.display='none';
+  setStatus(`${filteredProfiles.length} profiel${filteredProfiles.length!==1?'en':''} gevonden`);
+  const grid = document.getElementById('ps-grid');
+  filteredProfiles.forEach((p,i) => {
+    const card = makeCard(p, i, savedNames.has(p.name));
+    grid.appendChild(card);
+    setTimeout(() => card.classList.add('scanning'), i*80);
+  });
+}
+
+function makeCard(p, idx, isSaved) {
+  const card = document.createElement('div');
+  card.className = 'ps-card' + (isSaved?' saved':'');
+  card.id = 'card-'+idx;
+  const col = COLORS[idx%COLORS.length];
+  const skills = (p.skills||[]).map(s=>`<span class="ps-tag">${s}</span>`).join('');
+  const conn = p.followers ? `${p.followers>1000?(p.followers/1000).toFixed(1)+'k':p.followers}+ connecties` : '';
+  card.innerHTML = `
+    <div class="toast" id="toast-${idx}"></div>
+    <div class="ps-card-top">
+      <div class="ps-avatar ${col}">${p.initials}</div>
+      <div><p class="ps-name">${p.name}</p><p class="ps-title-text">${p.title}</p></div>
+    </div>
+    <div style="margin-bottom:10px;"><span class="ps-company"><i class="ti ti-building" style="font-size:12px;"></i>${p.company}</span></div>
+    <div class="ps-tags">${skills}</div>
+    <div class="ps-row"><i class="ti ti-map-pin"></i>${p.location}</div>
+    ${conn?`<div class="ps-row"><i class="ti ti-users"></i>${conn}</div>`:''}
+    ${p.bio?`<div class="ps-bio">${p.bio}</div>`:''}
+    <div class="ps-actions">
+      <button class="ps-btn save-btn ${isSaved?'saved-state':''}" id="savebtn-${idx}" onclick="toggleSave(${idx},this)">
+        <i class="ti ${isSaved?'ti-database-check':'ti-database-plus'}"></i> ${isSaved?'Opgeslagen':'Opslaan'}
+      </button>
+      <button class="ps-btn primary" onclick="alert('Profiel: ${p.name.replace(/'/g,"\\'")}\\n${p.title} @ ${p.company.replace(/'/g,"\\'")}\\n${p.location}\\n\\n${(p.bio||'').replace(/'/g,"\\'")}')">
+        <i class="ti ti-user"></i> Details
+      </button>
+    </div>`;
+  return card;
+}
+
+function toggleSave(idx, btn) {
+  const p = filteredProfiles[idx]; if (!p) return;
+  let db = getDB();
+  const exists = db.findIndex(x=>x.name===p.name);
+  if (exists>=0) {
+    db.splice(exists,1);
+    btn.className='ps-btn save-btn';
+    btn.innerHTML='<i class="ti ti-database-plus"></i> Opslaan';
+    document.getElementById('card-'+idx).classList.remove('saved');
+    showToast(idx,'Verwijderd');
+  } else {
+    db.push({...p, savedAt: new Date().toISOString()});
+    btn.className='ps-btn save-btn saved-state';
+    btn.innerHTML='<i class="ti ti-database-check"></i> Opgeslagen';
+    document.getElementById('card-'+idx).classList.add('saved');
+    showToast(idx,'Opgeslagen!');
+  }
+  saveDB(db);
+}
+
+function showToast(idx, msg) {
+  const t = document.getElementById('toast-'+idx); if (!t) return;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+function renderDB() {
+  const db = getDB();
+  const query = (document.getElementById('db-search').value||'').toLowerCase();
+  const filtered = db.filter(p=>!query||p.name.toLowerCase().includes(query)||p.title.toLowerCase().includes(query)||p.company.toLowerCase().includes(query));
+  const list = document.getElementById('db-list');
+  list.innerHTML = '';
+  document.getElementById('db-empty').style.display = filtered.length?'none':'block';
+  filtered.forEach((p,i)=>{
+    const row = document.createElement('div'); row.className='db-row';
+    const col = COLORS[i%COLORS.length];
+    const [bg,fg] = (CAT_COLORS[p.category]||'#e0f2fe|#0c4a6e').split('|');
+    const date = p.savedAt ? new Date(p.savedAt).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}) : '';
+    row.innerHTML=`
+      <div class="db-avatar ${col}">${p.initials}</div>
+      <div class="db-info"><p class="db-name">${p.name}</p><p class="db-sub">${p.title} · ${p.company}</p></div>
+      <span class="db-cat" style="background:${bg};color:${fg};">${p.category}</span>
+      ${date?`<span style="font-size:11px;color:var(--text2);flex-shrink:0;">${date}</span>`:''}
+      <button class="db-del" onclick="deleteFromDB('${p.name.replace(/'/g,"\\'")}',this)"><i class="ti ti-trash"></i></button>`;
+    list.appendChild(row);
+  });
+}
+
+function updateStats() {
+  const db = getDB();
+  document.getElementById('stat-total').textContent = db.length;
+  document.getElementById('stat-cats').textContent = new Set(db.map(p=>p.category)).size;
+  if (db.length) {
+    const last = db.reduce((a,b)=>new Date(a.savedAt||0)>new Date(b.savedAt||0)?a:b);
+    document.getElementById('stat-last').textContent = last.savedAt ? new Date(last.savedAt).toLocaleDateString('nl-NL',{day:'numeric',month:'short'}) : '—';
+  } else { document.getElementById('stat-last').textContent='—'; }
+}
+
+function deleteFromDB(name, btn) {
+  let db = getDB(); db = db.filter(p=>p.name!==name); saveDB(db);
+  btn.closest('.db-row').remove(); updateStats();
+  if (!getDB().length) document.getElementById('db-empty').style.display='block';
+}
+
+function clearDB() {
+  if (!confirm('Weet je zeker dat je alle opgeslagen profielen wilt verwijderen?')) return;
+  saveDB([]); renderDB(); updateStats();
+}
+
+function exportCSV() {
+  const db = getDB(); if (!db.length) { alert('Database is leeg.'); return; }
+  const headers = ['Naam','Functie','Bedrijf','Locatie','Categorie','Skills','E-mail','Opgeslagen op'];
+  const rows = db.map(p=>[p.name,p.title,p.company,p.location,p.category,(p.skills||[]).join(' | '),p.email_hint||'',p.savedAt?new Date(p.savedAt).toLocaleDateString('nl-NL'):''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','),...rows].join('\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href=url; a.download='peoplescout-database.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+function toggleFilter(el) {
+  document.querySelectorAll('.ps-filter').forEach(f=>f.classList.remove('active'));
+  el.classList.add('active'); currentFilter=el.dataset.filter; applyFilter();
+}
+function clearGrid() { document.getElementById('ps-grid').innerHTML=''; document.getElementById('ps-empty').style.display='none'; }
+function showLoading(s) { document.getElementById('ps-loading').style.display=s?'block':'none'; }
+function setStatus(m) { document.getElementById('ps-status').textContent=m; }
+
+checkApiKey();
+updateDBCount();
+</script>
+</body>
+</html>
