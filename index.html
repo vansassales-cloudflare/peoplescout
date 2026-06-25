@@ -494,7 +494,7 @@ async function runSearch(mode) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', max_tokens: 1000,
+        model: 'claude-sonnet-4-6', max_tokens: 2000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
         system: `You are a professional people search engine. Return ONLY a raw JSON array (no markdown, no backticks) with exactly 6 profiles matching: ${queryString}. Each object must have: name (string), initials (2 chars), title (string), company (string), location (string), category (one of: tech sales marketing leadership research), skills (array of 3 strings), email_hint (masked like "j.s***@company.com"), linkedin (bool), github (bool), website (bool), followers (integer), bio (one sentence). Make profiles realistic and diverse.`,
         messages: [{ role: 'user', content: `Zoek profielen voor: ${queryString}` }]
@@ -505,7 +505,25 @@ async function runSearch(mode) {
     const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
     const clean = text.replace(/```json|```/g,'').trim();
     const s = clean.indexOf('['), e2 = clean.lastIndexOf(']');
-    allProfiles = JSON.parse(clean.substring(s, e2+1));
+    let jsonStr = clean.substring(s, e2+1);
+    // Fix common JSON issues: control characters, unescaped newlines in strings
+    jsonStr = jsonStr.replace(/[\u0000-\u001F\u007F]/g, c => {
+      if (c === '\n') return '\\n';
+      if (c === '\r') return '\\r';
+      if (c === '\t') return '\\t';
+      return '';
+    });
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch(e) {
+      // Second attempt: extract individual objects with regex
+      const matches = jsonStr.match(/\{[^{}]*\}/g);
+      if (matches && matches.length) {
+        parsed = matches.map(m => { try { return JSON.parse(m); } catch { return null; } }).filter(Boolean);
+      } else { throw new Error('Kon profielen niet verwerken, probeer opnieuw.'); }
+    }
+    allProfiles = parsed;
     currentFilter = 'all';
     document.querySelectorAll('.ps-filter').forEach(f => f.classList.toggle('active', f.dataset.filter==='all'));
     applyFilter();
